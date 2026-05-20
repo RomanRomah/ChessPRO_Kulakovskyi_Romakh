@@ -4,23 +4,43 @@ import os
 
 class SoundEffects:
     def __init__(self):
-        # Ініціалізуємо мікшер для звуків
-        pygame.mixer.init()
+        # Ініціалізація мікшера для звуку
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()
 
-        # Завантажуємо звуки (з перевіркою чи існують файли)
-        try:
-            self.move_sound = pygame.mixer.Sound('Sounds/move_sound.mp3')
-            self.capture_sound = pygame.mixer.Sound('Sounds/capture_sound.mp3')
-            self.stalemate_sound = pygame.mixer.Sound('Sounds/stalemate_sound.mp3')
-            self.check_sound = pygame.mixer.Sound('Sounds/check_sound.mp3')
-            self.victory_sound = pygame.mixer.Sound('Sounds/victory_sound.mp3')
-        except FileNotFoundError:
-            print("Попередження: Звукові файли не знайдені в папці Sounds. Звук буде вимкнено.")
-            self.move_sound = None
-            self.capture_sound = None
-            self.stalemate_sound = None
-            self.check_sound = None
-            self.victory_sound = None
+        self.move_sound = None
+        self.capture_sound = None
+        self.victory_sound = None
 
+        self.load_sounds()
 
-__all__ = ['SoundEffects']
+    def load_sounds(self):
+        # Перевіряємо, чи існує папка Sounds та файли в ній
+        folder = "Sounds"
+
+        if not os.path.exists(folder):
+            print(f"Попередження: Папку '{folder}' не знайдено. Звук буде вимкнено.")
+            return
+
+        missing_files = False
+
+        # Завантажуємо звук ходу
+        if os.path.exists(f"{folder}/move.wav"):
+            self.move_sound = pygame.mixer.Sound(f"{folder}/move.wav")
+        else:
+            missing_files = True
+
+        # Завантажуємо звук перемоги/мату
+        if os.path.exists(f"{folder}/victory.wav"):
+            self.victory_sound = pygame.mixer.Sound(f"{folder}/victory.wav")
+        else:
+            missing_files = True
+
+        # Завантажуємо звук взяття фігури (якщо є)
+        if os.path.exists(f"{folder}/capture.wav"):
+            self.capture_sound = pygame.mixer.Sound(f"{folder}/capture.wav")
+
+        if missing_files:
+            print("Попередження: Деякі звукові файли не знайдені в папці Sounds. Вони не будуть відтворюватись.")
+        else:
+            print("🔊 Звуки успішно завантажено!")

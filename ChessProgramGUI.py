@@ -313,6 +313,7 @@ class ChessProgramGUI:
         tk.Button(det_win, text="ОК", bg="#3498db", fg="white", font=("Arial", 10, "bold"),
                   command=det_win.destroy).pack(pady=10)
 
+        # Використовуємо tk.eval з форматуванням для Toplevel вікна
         det_win.tk.eval(f'tk::PlaceWindow {det_win._w} center')
 
     def show_achievements(self):
@@ -349,24 +350,27 @@ class ChessProgramGUI:
             self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), pygame.RESIZABLE)
 
     def reset_game(self, color="KEEP", time_control="KEEP", opp_type="KEEP"):
+        # Зупиняємо всі звуки при перезапуску
+        pygame.mixer.stop()
+
         if color != "KEEP": self.player_color = color
         if opp_type != "KEEP": self.opponent_type = opp_type
         if time_control != "KEEP": self.time_control = time_control
 
-        self.game = ChessGame();
-        self.selected_piece = None;
+        self.game = ChessGame()
+        self.selected_piece = None
         self.valid_moves = []
-        self.last_move = None;
-        self.game_over_message = None;
+        self.last_move = None
+        self.game_over_message = None
         self.promotion_pending = None
-        self.move_history_list = [];
-        self.game_saved = False;
+        self.move_history_list = []
+        self.game_saved = False
         self.ai_is_thinking = False
-        self.ai_move_result = None;
+        self.ai_move_result = None
         self.history_scroll = 0
 
         if self.time_control is not None: self.white_time = self.black_time = self.time_control
-        self.timer_started = False;
+        self.timer_started = False
         self.last_tick = pygame.time.get_ticks()
 
     def format_time(self, seconds):
@@ -399,6 +403,8 @@ class ChessProgramGUI:
         return (7 - vc, 7 - vr) if self.player_color == Color.BLACK else (vc, vr)
 
     def draw_icons(self, surface, type, x, y):
+        x, y = int(x), int(y)
+
         if type == '5m':
             pygame.draw.polygon(surface, (255, 215, 0),
                                 [(x - 3, y - 8), (x + 5, y - 8), (x + 1, y - 1), (x + 6, y - 1), (x - 4, y + 9),
@@ -412,34 +418,40 @@ class ChessProgramGUI:
             pygame.draw.circle(surface, (255, 255, 255), (x - 5, y), 5, 2)
             pygame.draw.circle(surface, (255, 255, 255), (x + 5, y), 5, 2)
         elif type == 'human':
-            pygame.draw.circle(surface, (220, 220, 220), (x, y - 4), 5)
+            pygame.draw.circle(surface, (220, 220, 220), (x, y - 5), 6)
             pygame.draw.polygon(surface, (220, 220, 220),
-                                [(x - 8, y + 7), (x + 8, y + 7), (x + 5, y + 2), (x - 5, y + 2)])
+                                [(x - 9, y + 8), (x + 9, y + 8), (x + 6, y + 2), (x - 6, y + 2)])
         elif type == 'bot':
-            pygame.draw.rect(surface, (220, 220, 220), (x - 6, y - 3, 12, 10), border_radius=2)
-            pygame.draw.line(surface, (220, 220, 220), (x - 4, y - 3), (x - 4, y - 7), 2)
-            pygame.draw.line(surface, (220, 220, 220), (x + 4, y - 3), (x + 4, y - 7), 2)
-            pygame.draw.circle(surface, (255, 100, 100), (x - 2, y + 1), 2)
-            pygame.draw.circle(surface, (255, 100, 100), (x + 2, y + 1), 2)
+            pygame.draw.rect(surface, (220, 220, 220), (x - 7, y - 4, 14, 11), border_radius=2)
+            pygame.draw.line(surface, (220, 220, 220), (x - 4, y - 4), (x - 4, y - 8), 2)
+            pygame.draw.line(surface, (220, 220, 220), (x + 4, y - 4), (x + 4, y - 8), 2)
+            pygame.draw.circle(surface, (255, 80, 80), (x - 3, y + 1), 2)
+            pygame.draw.circle(surface, (255, 80, 80), (x + 3, y + 1), 2)
         elif type == 'save':
-            pygame.draw.rect(surface, (100, 200, 100), (x - 7, y - 7, 14, 14), border_radius=2)
-            pygame.draw.rect(surface, (255, 255, 255), (x - 4, y - 7, 8, 5))
+            pygame.draw.rect(surface, (100, 210, 100), (x - 8, y - 8, 16, 16), border_radius=2)
+            pygame.draw.rect(surface, (255, 255, 255), (x - 5, y - 8, 10, 6))
+            pygame.draw.rect(surface, (40, 40, 40), (x - 2, y - 7, 4, 4))
+            pygame.draw.rect(surface, (200, 255, 200), (x - 4, y + 1, 8, 5))
         elif type == 'load':
-            pygame.draw.arc(surface, (100, 150, 255), (x - 7, y - 7, 14, 14), 0, 4.7, 2)
-            pygame.draw.polygon(surface, (100, 150, 255), [(x + 3, y - 3), (x + 8, y + 1), (x + 3, y + 3)])
+            rect = pygame.Rect(x - 8, y - 8, 16, 16)
+            pygame.draw.arc(surface, (100, 160, 255), rect, 0.5, 5.8, 3)
+            pygame.draw.polygon(surface, (100, 160, 255), [(x + 4, y - 5), (x + 9, y), (x + 4, y + 2)])
         elif type == 'key':
-            pygame.draw.circle(surface, (220, 220, 220), (x - 5, y), 4, 2)
-            pygame.draw.line(surface, (220, 220, 220), (x - 1, y), (x + 7, y), 2)
-            pygame.draw.line(surface, (220, 220, 220), (x + 4, y), (x + 4, y + 3), 2)
-            pygame.draw.line(surface, (220, 220, 220), (x + 7, y), (x + 7, y + 3), 2)
+            pygame.draw.circle(surface, (220, 220, 220), (x - 6, y), 5, 2)
+            pygame.draw.line(surface, (220, 220, 220), (x - 1, y), (x + 9, y), 3)
+            pygame.draw.line(surface, (220, 220, 220), (x + 5, y), (x + 5, y + 4), 2)
+            pygame.draw.line(surface, (220, 220, 220), (x + 8, y), (x + 8, y + 4), 2)
         elif type == 'hist':
-            pygame.draw.rect(surface, (220, 220, 220), (x - 6, y - 7, 12, 14), 2, border_radius=2)
-            pygame.draw.line(surface, (220, 220, 220), (x - 3, y - 3), (x + 3, y - 3), 2)
-            pygame.draw.line(surface, (220, 220, 220), (x - 3, y + 1), (x + 3, y + 1), 2)
-            pygame.draw.line(surface, (220, 220, 220), (x - 3, y + 5), (x, y + 5), 2)
+            pygame.draw.rect(surface, (220, 220, 220), (x - 7, y - 9, 14, 18), 2, border_radius=2)
+            pygame.draw.line(surface, (220, 220, 220), (x - 4, y - 4), (x + 4, y - 4), 2)
+            pygame.draw.line(surface, (220, 220, 220), (x - 4, y), (x + 4, y), 2)
+            pygame.draw.line(surface, (220, 220, 220), (x - 4, y + 4), (x + 1, y + 4), 2)
         elif type == 'star':
-            pts = [(x, y - 7), (x + 2, y - 2), (x + 7, y - 2), (x + 3, y + 1), (x + 5, y + 6), (x, y + 3),
-                   (x - 5, y + 6), (x - 3, y + 1), (x - 7, y - 2), (x - 2, y - 2)]
+            pts = [
+                (x, y - 9), (x + 3, y - 3), (x + 9, y - 3), (x + 4, y + 2),
+                (x + 6, y + 8), (x, y + 4), (x - 6, y + 8), (x - 4, y + 2),
+                (x - 9, y - 3), (x - 3, y - 3)
+            ]
             pygame.draw.polygon(surface, (255, 215, 0), pts)
 
     def draw_bottom_bar(self):
@@ -655,7 +667,7 @@ class ChessProgramGUI:
         if self.selected_piece and not self.game_over_message and not self.promotion_pending:
             vs_c, vs_r = self.v_coord(self.selected_piece.x, self.selected_piece.y)
             s = pygame.Surface((self.square_size, self.square_size))
-            s.set_alpha(100);
+            s.set_alpha(100)
             s.fill((255, 255, 100))
             self.internal_surface.blit(s, (vs_c * self.square_size, vs_r * self.square_size))
 
@@ -743,10 +755,10 @@ class ChessProgramGUI:
 
     def draw_promotion_menu(self):
         if self.promotion_pending:
-            o = pygame.Surface((self.board_size, self.board_size), pygame.SRCALPHA);
-            o.fill((0, 0, 0, 180));
+            o = pygame.Surface((self.board_size, self.board_size), pygame.SRCALPHA)
+            o.fill((0, 0, 0, 180))
             self.internal_surface.blit(o, (0, 0))
-            m = pygame.Rect(self.board_size // 2 - 200, self.height // 2 - 70, 400, 140);
+            m = pygame.Rect(self.board_size // 2 - 200, self.height // 2 - 70, 400, 140)
             pygame.draw.rect(self.internal_surface, (245, 245, 245), m, border_radius=15)
             c = 'w' if self.promotion_pending[2] == Color.WHITE else 'b'
             for i, p in enumerate(['Q', 'R', 'B', 'N']):
@@ -759,8 +771,8 @@ class ChessProgramGUI:
     def select_piece(self, col, row):
         p = self.game.position.get_piece_at(col, row)
         if p and p.color == self.game.current_turn:
-            self.selected_piece = p;
-            p.calculate_valid_moves();
+            self.selected_piece = p
+            p.calculate_valid_moves()
             self.valid_moves = p.moves
         else:
             self.selected_piece = None;
@@ -773,8 +785,12 @@ class ChessProgramGUI:
         self.move_history_list.append(self.get_notation(piece, col, row))
         self.history_scroll = 999999
 
-        if char == 'P' and col != old_x and self.game.position.is_empty_at(col, row): self.game.position.board[old_y][
-            col] = None
+        is_capture = self.game.position.get_piece_at(col, row) is not None
+
+        if char == 'P' and col != old_x and self.game.position.is_empty_at(col, row):
+            self.game.position.board[old_y][col] = None
+            is_capture = True
+
         if char == 'K' and abs(col - old_x) == 2:
             r_col, t_col = (7, 5) if col == 6 else (0, 3)
             rook = self.game.position.get_piece_at(r_col, row)
@@ -801,7 +817,11 @@ class ChessProgramGUI:
                 self.game.position.castling_state.black_king_side = False
 
         self.game.position.en_passant = (col, (row + old_y) // 2) if char == 'P' and abs(row - old_y) == 2 else None
-        if self.sounds.move_sound: self.sounds.move_sound.play()
+
+        if is_capture:
+            if self.sounds.capture_sound: self.sounds.capture_sound.play()
+        else:
+            if self.sounds.move_sound: self.sounds.move_sound.play()
 
         if char == 'P' and (row == 0 or row == 7):
             if self.opponent_type != "HUMAN" and color != self.player_color:
@@ -952,19 +972,19 @@ class ChessProgramGUI:
                                 self.game.position.board[r][c] = [Queen, Rook, Bishop, Knight][(vx - s_x) // 100](c, r,
                                                                                                                   clr,
                                                                                                                   self.game.position)
-                                self.promotion_pending = None;
+                                self.promotion_pending = None
                                 self.finish_turn()
                         else:
                             self.handle_click(vx, vy)
 
             if self.opponent_type != "HUMAN" and self.game.current_turn != self.player_color and not self.game_over_message and not self.promotion_pending:
                 if not self.ai_is_thinking:
-                    self.ai_is_thinking = True;
+                    self.ai_is_thinking = True
                     threading.Thread(target=self.calculate_ai_move_bg, daemon=True).start()
 
             if self.ai_move_result is not None:
-                move = self.ai_move_result;
-                self.ai_move_result = None;
+                move = self.ai_move_result
+                self.ai_move_result = None
                 self.ai_is_thinking = False
                 if move: self.execute_move(move[0][0], move[0][1], move[1][0], move[1][1])
 
